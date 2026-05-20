@@ -53,7 +53,7 @@ EXTRA_STOPS   = STOPWORDS | {
 _using_transformer = os.path.exists(SENTIMENT_CACHE)
 
 # ── Data ──────────────────────────────────────────────────────────────────────
-@st.cache_data(show_spinner="Loading & scoring 87K reviews…")
+@st.cache_data(show_spinner="Loading reviews…")
 def get_data():
     return load_data("amazon_reviews.csv")
 

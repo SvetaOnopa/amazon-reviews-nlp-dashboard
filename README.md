@@ -155,7 +155,7 @@ Place the file in the project root. The app expects it at `amazon_reviews.csv`.
 ### Install
 
 ```bash
-git clone https://github.com/SvetaOnopa/amazon-reviews-nlp-dashboard.git
+git clone https://github.com/your_username/amazon-reviews-nlp-dashboard.git
 cd amazon-reviews-nlp-dashboard
 pip install -r requirements.txt          # app only
 pip install -r requirements-dev.txt      # + DistilBERT and notebook tools
@@ -206,7 +206,7 @@ amazon-reviews-nlp-dashboard/
 
 - Replace rule-based complaint categories with BERTopic for unsupervised topic discovery
 - Aspect-based sentiment — score delivery, quality, price separately per review
-- Incremental scraping pipeline to keep the dataset current
+- Automated refresh from updated Kaggle exports to keep the dataset current
 - UMAP visualisation of review embeddings coloured by sentiment cluster
 
 ---

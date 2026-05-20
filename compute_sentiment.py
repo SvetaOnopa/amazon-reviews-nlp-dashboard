@@ -3,7 +3,7 @@ One-time script to compute transformer-based sentiment for all reviews.
 Saves results to analysis/sentiment_cache.parquet.
 
 Run once from the project root:
-    py compute_sentiment.py
+    python compute_sentiment.py
 
 Uses: distilbert-base-uncased-finetuned-sst-2-english (~67 MB)
 Neutral rule: confidence < 0.72 → Neutral (model is uncertain)
