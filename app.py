@@ -65,7 +65,7 @@ _min_date = df_full["at"].dt.date.min()
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.title("📦 Amazon Reviews")
-    st.caption("87,112 reviews · 2018–2026")
+    st.caption(f"{len(df_full):,} reviews · {_min_date.year}–{_max_date.year}")
 
     st.divider()
 
@@ -164,7 +164,8 @@ st.caption(
 k1, k2, k3, k4, k5 = st.columns(5)
 k1.metric("⭐ Avg Rating",    f"{df['score'].mean():.2f} / 5")
 k2.metric("💬 Avg Sentiment", f"{df['compound'].mean():+.3f}",
-          delta="above neutral" if df["compound"].mean() > 0 else "below neutral")
+          delta="above neutral" if df["compound"].mean() > 0 else "below neutral",
+          delta_color="normal" if df["compound"].mean() > 0 else "inverse")
 k3.metric("😊 Positive",      f"{(df['sentiment']=='Positive').mean()*100:.1f}%")
 k4.metric("😠 Negative",      f"{(df['sentiment']=='Negative').mean()*100:.1f}%")
 k5.metric("👍 Max Upvotes",   f"{df['thumbsUpCount'].max():,}")

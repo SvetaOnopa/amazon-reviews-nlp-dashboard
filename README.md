@@ -5,7 +5,7 @@
 ![HuggingFace](https://img.shields.io/badge/HuggingFace-DistilBERT-FFD21E?logo=huggingface&logoColor=black)
 ![Plotly](https://img.shields.io/badge/Plotly-Interactive-3F4F75?logo=plotly&logoColor=white)
 
-An interactive NLP dashboard analysing 87,112 Google Play reviews of the Amazon Shopping app (2018–2026). Applies DistilBERT for transformer-based sentiment scoring, TF-IDF keyword extraction, sarcasm detection, and complaint categorisation across six analytical tabs.
+An interactive NLP dashboard analysing 92,998 Google Play reviews of the Amazon Shopping app (2018–2026). Applies DistilBERT for transformer-based sentiment scoring, TF-IDF keyword extraction, sarcasm detection, and complaint categorisation across six analytical tabs.
 
 ---
 
@@ -47,7 +47,7 @@ Star ratings are a noisy signal — a 1-star review can be sarcastic praise and 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │  Data source: Google Play Store                                      │
-│  amazon_reviews.csv  ·  87,112 reviews  ·  2018 – 2026             │
+│  amazon_reviews.csv  ·  92,998 reviews  ·  2018 – 2026             │
 └───────────────────────────────┬──────────────────────────────────────┘
                                 │
                                 ▼
