@@ -72,6 +72,13 @@ COMPLAINT_CATEGORIES = {
     "AI / Ads":            r"\bai\b|artificial intelligence|alexa|chatbot|advertis|sponsor",
 }
 
+_SARCASM_EMOJI_PAT = r'[😂🤣🙄]'
+_SARCASM_PHRASE_PAT = (
+    r'clown world|absolute joke|what a joke|wow thanks|well done amazon|'
+    r'great job amazon|congratulations amazon|thanks for nothing|'
+    r'\boh wow\b|\boh great\b|\blol\b|\bhaha\b|\bwtf\b'
+)
+
 POSITIVE_THEMES = {
     "Selection & Variety": r"selection|variety|choice|wide range|everything|find anything",
     "Price & Value":       r"price|cheap|afford|deal|value|discount|offer|bargain|save",
@@ -98,6 +105,7 @@ def load_data(path: str = "amazon_reviews.csv") -> pd.DataFrame:
     df = df.dropna(subset=["score", "at"])
     df = _add_sentiment(df)
     df = _add_labels(df)
+    df = _add_sarcasm_flag(df)
     return df
 
 
@@ -132,6 +140,23 @@ def _add_labels(df: pd.DataFrame) -> pd.DataFrame:
     df["rating_label"] = df["score"].apply(
         lambda s: "Positive" if s >= 4 else ("Negative" if s <= 2 else "Neutral")
     )
+    return df
+
+
+def _add_sarcasm_flag(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    low_rating  = df["score"] <= 2
+    laugh_emoji = df["content"].str.contains(_SARCASM_EMOJI_PAT, regex=True, na=False)
+    pos_score   = df["compound"] > 0.05   # model thinks it's positive
+    very_pos    = df["compound"] > 0.45   # suspiciously upbeat for a 1-2★ review
+    sarc_phrase = df["content"].str.contains(_SARCASM_PHRASE_PAT, case=False, regex=True, na=False)
+
+    df["is_sarcastic"] = low_rating & (
+        (laugh_emoji & pos_score) | very_pos | sarc_phrase
+    )
+    mask = df["is_sarcastic"]
+    df.loc[mask, "sentiment"] = "Negative"
+    df.loc[mask, "compound"]  = -df.loc[mask, "compound"].abs()
     return df
 
 

@@ -16,3 +16,9 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Dataset — obtain locally via google-play-scraper (see README)
+amazon_reviews.csv
+
+# Generated logs
+*.log

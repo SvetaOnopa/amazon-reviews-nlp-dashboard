@@ -10,15 +10,16 @@ Neutral rule: confidence < 0.72 → Neutral (model is uncertain)
 Estimated time: 10–20 min on CPU  |  <2 min with CUDA GPU
 """
 
+import gc
 import os
 import pandas as pd
 import torch
-from transformers import pipeline
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 from tqdm import tqdm
 
 MODEL        = "distilbert-base-uncased-finetuned-sst-2-english"
 CACHE_PATH   = "analysis/sentiment_cache.parquet"
-BATCH_SIZE   = 128
+BATCH_SIZE   = 32
 MAX_LEN      = 128
 NEUTRAL_CONF = 0.72   # below this → Neutral
 
@@ -40,17 +41,26 @@ def main():
     os.makedirs("analysis", exist_ok=True)
 
     print("Loading reviews…")
-    df = pd.read_csv("amazon_reviews.csv")
+    df = pd.read_csv("amazon_reviews.csv", usecols=["reviewId", "content"])
     df["content"] = df["content"].fillna("").astype(str)
     texts = df["content"].tolist()
+    gc.collect()
 
     device = 0 if torch.cuda.is_available() else -1
     device_name = "GPU" if device == 0 else "CPU"
     print(f"Loading model '{MODEL}' on {device_name}…")
 
+    # use_safetensors=False forces the .bin format (no mmap) — avoids Windows
+    # error 1455 "page file too small" triggered by safetensors memory mapping
+    tokenizer = AutoTokenizer.from_pretrained(MODEL)
+    model     = AutoModelForSequenceClassification.from_pretrained(
+        MODEL, use_safetensors=False
+    )
+    gc.collect()
     nlp = pipeline(
         "sentiment-analysis",
-        model=MODEL,
+        model=model,
+        tokenizer=tokenizer,
         device=device,
         truncation=True,
         max_length=MAX_LEN,
@@ -70,7 +80,7 @@ def main():
     out = df[["reviewId", "compound", "sentiment"]]
     out.to_parquet(CACHE_PATH, index=False)
 
-    print(f"\nSaved → {CACHE_PATH}")
+    print(f"\nSaved -> {CACHE_PATH}")
     print(df["sentiment"].value_counts().to_string())
     print("\nDone! Restart the Streamlit app to pick up the new scores.")
 

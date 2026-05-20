@@ -67,11 +67,6 @@ with st.sidebar:
     st.title("📦 Amazon Reviews")
     st.caption("87,112 reviews · 2018–2026")
 
-    if _using_transformer:
-        st.success("🤖 Transformer sentiment active", icon="✅")
-    else:
-        st.info("⚠️ Using VADER. Run `py compute_sentiment.py` for better accuracy.", icon="ℹ️")
-
     st.divider()
 
     # ── Star rating ───────────────────────────────────────────────────────────
@@ -141,7 +136,6 @@ with st.sidebar:
     )
 
     st.divider()
-    st.caption("Built with Streamlit · DistilBERT · TF-IDF")
 
 # ── Apply filters ─────────────────────────────────────────────────────────────
 df = filter_data(df_full, score_range, selected_versions, (d0, d1))
@@ -328,6 +322,11 @@ with tab_sentiment:
                               yaxis=dict(range=[-1,1]))
         st.plotly_chart(fig_cs, use_container_width=True)
 
+    st.caption(
+        "Sentiment is assigned by DistilBERT: **Positive** = model is ≥72% confident the text is positive · "
+        "**Negative** = ≥72% confident negative · **Neutral** = model is uncertain (confidence <72%). "
+        "The Avg Sentiment score ranges from −1 (most negative) to +1 (most positive)."
+    )
     st.markdown('<div class="section-header">Rating vs Sentiment Agreement Matrix</div>', unsafe_allow_html=True)
     agree = pd.crosstab(df["rating_label"], df["sentiment"], normalize="index") * 100
     fig_hm = px.imshow(agree.round(1), text_auto=".1f", color_continuous_scale="RdYlGn",
@@ -335,6 +334,11 @@ with tab_sentiment:
                        labels=dict(x="Sentiment (model)", y="Star Rating Group", color="%"))
     fig_hm.update_layout(margin=dict(t=10,b=10), height=260)
     st.plotly_chart(fig_hm, use_container_width=True)
+    st.caption(
+        "Each row shows the % of reviews in that star-rating group that received each sentiment label (rows sum to 100%). "
+        "Ideally: high-star reviews → Positive, low-star reviews → Negative. "
+        "Off-diagonal cells reveal disagreements — e.g. a 5★ review the model reads as Negative, or a 1★ review with genuinely positive text."
+    )
 
     cs3, cs4 = st.columns(2)
     with cs3:
@@ -369,9 +373,10 @@ with tab_keywords:
     ck1, ck2 = st.columns(2)
     with ck1:
         st.markdown('<div class="section-header">Top Keywords — Positive (4-5★)</div>', unsafe_allow_html=True)
-        fig_kp = px.bar(top_pos[::-1].reset_index(drop=True), x="score", y="keyword",
+        _kp_df = top_pos[::-1].reset_index(drop=True)
+        fig_kp = px.bar(_kp_df, x="score", y="keyword",
                         orientation="h", color="score",
-                        color_continuous_scale="Greens", text=top_pos["score"].round(1))
+                        color_continuous_scale="Greens", text=_kp_df["score"].round(1))
         fig_kp.update_traces(textposition="outside")
         fig_kp.update_layout(showlegend=False, coloraxis_showscale=False,
                               margin=dict(t=10,b=10), height=480,
@@ -380,14 +385,17 @@ with tab_keywords:
 
     with ck2:
         st.markdown('<div class="section-header">Top Keywords — Negative (1-2★)</div>', unsafe_allow_html=True)
-        fig_kn = px.bar(top_neg[::-1].reset_index(drop=True), x="score", y="keyword",
+        _kn_df = top_neg[::-1].reset_index(drop=True)
+        fig_kn = px.bar(_kn_df, x="score", y="keyword",
                         orientation="h", color="score",
-                        color_continuous_scale="Reds", text=top_neg["score"].round(1))
+                        color_continuous_scale="Reds", text=_kn_df["score"].round(1))
         fig_kn.update_traces(textposition="outside")
         fig_kn.update_layout(showlegend=False, coloraxis_showscale=False,
                               margin=dict(t=10,b=10), height=480,
                               xaxis_title="TF-IDF Score", yaxis_title="")
         st.plotly_chart(fig_kn, use_container_width=True)
+
+    st.caption("**TF-IDF Score** — measures how characteristic a word is for this review group. It rewards words that appear frequently here but rarely in the opposite group. Higher score = more distinctive keyword. Darker color = higher score. Bars are sorted top-to-bottom from most to least distinctive.")
 
     st.markdown('<div class="section-header">Word Clouds</div>', unsafe_allow_html=True)
     wc_cols = st.columns(2)
@@ -432,20 +440,41 @@ with tab_complaints:
             df_cats = pd.DataFrame({"Category": cat_counts.index,
                                     "Count": cat_counts.values,
                                     "% Neg Reviews": cat_pct.values})
-            fig_cc = px.bar(df_cats[::-1].reset_index(drop=True),
+            _cc_df = df_cats[::-1].reset_index(drop=True)
+            fig_cc = px.bar(_cc_df,
                             x="% Neg Reviews", y="Category", orientation="h",
-                            color="% Neg Reviews", color_continuous_scale="Reds_r",
-                            text=df_cats["% Neg Reviews"].round(1))
+                            color="% Neg Reviews", color_continuous_scale="Reds",
+                            text=_cc_df["% Neg Reviews"].round(1))
             fig_cc.update_traces(texttemplate="%{text}%", textposition="outside")
             fig_cc.update_layout(coloraxis_showscale=False, margin=dict(t=10,b=10),
                                  height=max(380, len(cat_counts)*32),
                                  xaxis_title="% of Negative Reviews", yaxis_title="")
             st.plotly_chart(fig_cc, use_container_width=True)
+            st.caption("% = share of 1-2★ reviews that mention this topic. One review can match multiple categories, so totals may exceed 100%. Darker red = more prevalent complaint. Sorted top-to-bottom from most to least common.")
 
         with cc2:
             st.markdown('<div class="section-header">Quick Stats</div>', unsafe_allow_html=True)
             for cat, pct in cat_pct.head(6).items():
                 st.metric(cat, f"{pct:.1f}%")
+
+        if "is_sarcastic" in neg_df.columns:
+            sarcasm_df = neg_df[neg_df["is_sarcastic"]].sort_values("thumbsUpCount", ascending=False)
+            if not sarcasm_df.empty:
+                st.markdown('<div class="section-header">🙄 Frustrated Sarcasm Detected</div>', unsafe_allow_html=True)
+                pct_sarc = len(sarcasm_df) / len(neg_df) * 100
+                st.caption(
+                    f"**{len(sarcasm_df):,}** reviews ({pct_sarc:.1f}% of 1-2★) flagged as likely sarcastic "
+                    f"(laughing emojis in negative context, suspiciously high sentiment score on low rating, "
+                    f"or sarcastic phrases). Sentiment auto-corrected to Negative."
+                )
+                for _, row in sarcasm_df.head(4).iterrows():
+                    stars = "⭐" * int(row["score"])
+                    st.markdown(
+                        f"{stars} &nbsp; 👍{row['thumbsUpCount']} &nbsp; `{str(row['at'])[:10]}`",
+                        unsafe_allow_html=True,
+                    )
+                    st.write(f"> {row['content'][:400]}{'…' if len(row['content']) > 400 else ''}")
+                    st.divider()
 
     # Positive themes
     pos_df2 = df[df["score"] >= 4].copy()
@@ -458,10 +487,11 @@ with tab_complaints:
     df_th = pd.DataFrame({"Theme": theme_counts.index,
                           "Count": theme_counts.values,
                           "% Pos Reviews": theme_pct.values})
-    fig_th = px.bar(df_th[::-1].reset_index(drop=True),
+    _th_df = df_th[::-1].reset_index(drop=True)
+    fig_th = px.bar(_th_df,
                     x="% Pos Reviews", y="Theme", orientation="h",
                     color="% Pos Reviews", color_continuous_scale="Greens",
-                    text=df_th["% Pos Reviews"].round(1))
+                    text=_th_df["% Pos Reviews"].round(1))
     fig_th.update_traces(texttemplate="%{text}%", textposition="outside")
     fig_th.update_layout(coloraxis_showscale=False, margin=dict(t=10,b=10), height=320,
                          xaxis_title="% of Positive Reviews", yaxis_title="")
@@ -497,10 +527,11 @@ with tab_complaints:
     cv1, cv2 = st.columns(2)
     with cv1:
         top10 = ver_stats.head(10)
-        fig_tv = px.bar(top10[::-1].reset_index(drop=True), x="Avg Rating", y="Version",
+        _tv_df = top10[::-1].reset_index(drop=True)
+        fig_tv = px.bar(_tv_df, x="Avg Rating", y="Version",
                         orientation="h", color="Avg Rating",
                         color_continuous_scale="Greens", range_color=[1,5],
-                        text=top10["Avg Rating"].round(2))
+                        text=_tv_df["Avg Rating"].round(2))
         fig_tv.update_traces(textposition="outside")
         fig_tv.update_layout(coloraxis_showscale=False, margin=dict(t=30,b=10), height=360,
                              title="Best Rated Versions (≥30 reviews)")
