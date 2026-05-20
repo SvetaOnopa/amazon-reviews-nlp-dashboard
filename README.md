@@ -5,7 +5,7 @@
 ![HuggingFace](https://img.shields.io/badge/HuggingFace-DistilBERT-FFD21E?logo=huggingface&logoColor=black)
 ![Plotly](https://img.shields.io/badge/Plotly-Interactive-3F4F75?logo=plotly&logoColor=white)
 
-An interactive NLP dashboard analysing 92,998 Google Play reviews of the Amazon Shopping app (2018–2026). Applies DistilBERT for transformer-based sentiment scoring, TF-IDF keyword extraction, sarcasm detection, and complaint categorisation across six analytical tabs.
+An interactive NLP dashboard analysing 92,998 Amazon Shopping app reviews (2018–2026) sourced from Kaggle. Applies DistilBERT for transformer-based sentiment scoring, TF-IDF keyword extraction, sarcasm detection, and complaint categorisation across six analytical tabs.
 
 ---
 
@@ -46,7 +46,7 @@ Star ratings are a noisy signal — a 1-star review can be sarcastic praise and 
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  Data source: Google Play Store                                      │
+│  Data source: Kaggle                                                 │
 │  amazon_reviews.csv  ·  92,998 reviews  ·  2018 – 2026             │
 └───────────────────────────────┬──────────────────────────────────────┘
                                 │
@@ -93,7 +93,7 @@ Star ratings are a noisy signal — a 1-star review can be sarcastic praise and 
 | `appVersion` | App version at time of review |
 | `userName` | Reviewer display name |
 
-Scraped from the Amazon Shopping app on Google Play using [`google-play-scraper`](https://pypi.org/project/google-play-scraper/). The dataset is not bundled in this repo — see setup instructions below.
+Source: [Amazon Shopping Reviews (Daily Updated)](https://www.kaggle.com/datasets/ashishkumarak/amazon-shopping-reviews-daily-updated) on Kaggle. The CSV is not bundled in this repo — download it and place it in the project root as `amazon_reviews.csv`.
 
 ---
 
@@ -114,7 +114,7 @@ If no Parquet cache is present, the app falls back to VADER in real time. The da
 | | VADER | DistilBERT |
 |---|---|---|
 | Type | Lexicon / rule-based | Transformer (fine-tuned) |
-| Speed | Real-time | ~10–20 min / 87 K reviews on CPU |
+| Speed | Real-time | ~10–20 min / 93 K reviews on CPU |
 | Negation | Heuristic | Contextual |
 | Neutral | Fixed compound threshold | Calibrated confidence threshold |
 | Sarcasm | Fails | Partially handles via context |
@@ -135,7 +135,7 @@ Flagged reviews have their sentiment overridden to Negative and their compound s
 
 ## Key findings
 
-- The app averages ~2.7 ★ across 87 K reviews — well below the 4.0 ★ benchmark for top shopping apps
+- The app averages ~2.7 ★ across 93 K reviews — well below the 4.0 ★ benchmark for top shopping apps
 - The 3-star tier is significantly underrepresented; users tend to feel strongly in one direction
 - Top complaint themes: delivery delays, missing orders, refund friction, app crashes, and unresponsive customer support
 - Rating quality shifts noticeably across app versions — visible in the version performance breakdown
@@ -147,22 +147,15 @@ Flagged reviews have their sentiment overridden to Negative and their compound s
 
 ### Get the dataset
 
-```python
-from google_play_scraper import reviews, Sort
-import pandas as pd
+Download `amazon_reviews.csv` from Kaggle:
+[https://www.kaggle.com/datasets/ashishkumarak/amazon-shopping-reviews-daily-updated](https://www.kaggle.com/datasets/ashishkumarak/amazon-shopping-reviews-daily-updated)
 
-result, _ = reviews(
-    'com.amazon.mShop.android.shopping',
-    lang='en', country='us',
-    sort=Sort.NEWEST, count=100_000,
-)
-pd.DataFrame(result).to_csv('amazon_reviews.csv', index=False)
-```
+Place the file in the project root. The app expects it at `amazon_reviews.csv`.
 
 ### Install
 
 ```bash
-git clone https://github.com/<your-username>/amazon-reviews-nlp-dashboard.git
+git clone https://github.com/SvetaOnopa/amazon-reviews-nlp-dashboard.git
 cd amazon-reviews-nlp-dashboard
 pip install -r requirements.txt          # app only
 pip install -r requirements-dev.txt      # + DistilBERT and notebook tools
