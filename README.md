@@ -5,7 +5,7 @@
 ![HuggingFace](https://img.shields.io/badge/HuggingFace-DistilBERT-FFD21E?logo=huggingface&logoColor=black)
 ![Plotly](https://img.shields.io/badge/Plotly-Interactive-3F4F75?logo=plotly&logoColor=white)
 
-An interactive NLP dashboard analysing 92,998 Amazon Shopping app reviews (2018–2026) sourced from Kaggle. Applies DistilBERT for transformer-based sentiment scoring, TF-IDF keyword extraction, sarcasm detection, and complaint categorisation across six analytical tabs.
+An interactive NLP dashboard analysing 87,112 Amazon Shopping app reviews (2018–2026) sourced from Kaggle. Applies DistilBERT for transformer-based sentiment scoring, TF-IDF keyword extraction, sarcasm detection, and complaint categorisation across six analytical tabs.
 
 ---
 
@@ -47,7 +47,7 @@ Star ratings are a noisy signal — a 1-star review can be sarcastic praise and 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
 │  Data source: Kaggle                                                 │
-│  amazon_reviews.csv  ·  92,998 reviews  ·  2018 – 2026             │
+│  amazon_reviews.csv  ·  87,112 reviews  ·  2018 – 2026             │
 └───────────────────────────────┬──────────────────────────────────────┘
                                 │
                                 ▼
@@ -114,7 +114,7 @@ If no Parquet cache is present, the app falls back to VADER in real time. The da
 | | VADER | DistilBERT |
 |---|---|---|
 | Type | Lexicon / rule-based | Transformer (fine-tuned) |
-| Speed | Real-time | ~10–20 min / 93 K reviews on CPU |
+| Speed | Real-time | ~10–20 min / 87 K reviews on CPU |
 | Negation | Heuristic | Contextual |
 | Neutral | Fixed compound threshold | Calibrated confidence threshold |
 | Sarcasm | Fails | Partially handles via context |
@@ -135,7 +135,7 @@ Flagged reviews have their sentiment overridden to Negative and their compound s
 
 ## Key findings
 
-- The app averages ~2.7 ★ across 93 K reviews — well below the 4.0 ★ benchmark for top shopping apps
+- The app averages ~2.7 ★ across 87 K reviews — well below the 4.0 ★ benchmark for top shopping apps
 - The 3-star tier is significantly underrepresented; users tend to feel strongly in one direction
 - Top complaint themes: delivery delays, missing orders, refund friction, app crashes, and unresponsive customer support
 - Rating quality shifts noticeably across app versions — visible in the version performance breakdown
