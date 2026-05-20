@@ -1,18 +1,11 @@
-# Local development dependencies
-# Includes everything in requirements.txt plus tools for:
-#   - Running compute_sentiment.py (DistilBERT inference)
-#   - Working with the analysis notebook
-#
-# Install: pip install -r requirements-dev.txt
-
 -r requirements.txt
 
-# DistilBERT inference (compute_sentiment.py)
+# DistilBERT inference
 transformers>=4.35.0
 torch>=2.0.0
 tqdm>=4.66.0
 
-# Analysis notebook
+# Notebook
 seaborn>=0.13.0
 notebook>=7.0.0
 jupyter>=1.0.0

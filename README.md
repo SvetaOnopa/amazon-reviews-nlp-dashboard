@@ -1,43 +1,44 @@
 # Amazon Reviews Intelligence Dashboard
 
-**An end-to-end NLP analytics platform for 87,112 Google Play reviews of the Amazon Shopping app.**
-
-Built with DistilBERT for transformer-based sentiment scoring, interactive Plotly visualisations, sarcasm detection, and TF-IDF keyword extraction — packaged as a fully deployable Streamlit dashboard.
-
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.35+-FF4B4B?logo=streamlit&logoColor=white)
 ![HuggingFace](https://img.shields.io/badge/HuggingFace-DistilBERT-FFD21E?logo=huggingface&logoColor=black)
 ![Plotly](https://img.shields.io/badge/Plotly-Interactive-3F4F75?logo=plotly&logoColor=white)
 
----
-
-## Overview
-
-Star ratings alone are a noisy signal. A 1-star review can be sarcastic praise; a 5-star review can contain genuine complaints about a secondary feature. This dashboard goes beyond ratings by applying contextual NLP to surface what users are actually saying — at scale.
-
-**Business question this answers:** *What are customers saying about the Amazon Shopping app, how has sentiment evolved over eight years, and where are the biggest friction points by app version and complaint category?*
-
-What makes this more than a tutorial:
-- Uses **DistilBERT** (not just VADER) with a calibrated confidence-based neutral threshold
-- **Sarcasm detection** pipeline using three independent signals: emoji patterns, sentiment/rating anomaly, and phrase matching
-- VADER retained as a zero-config fallback — the app is always runnable, with or without the pre-computed cache
-- Version-level performance analysis — useful for product teams correlating releases with rating shifts
-- TF-IDF keyword extraction scoped per sentiment group — reveals not just frequent words but distinctive ones
+An interactive NLP dashboard analysing 87,112 Google Play reviews of the Amazon Shopping app (2018–2026). Applies DistilBERT for transformer-based sentiment scoring, TF-IDF keyword extraction, sarcasm detection, and complaint categorisation across six analytical tabs.
 
 ---
 
-## Features
-
-| Tab | What it shows |
+| Overview | Trends |
 |---|---|
-| **Overview** | Rating distribution, sentiment split donut, year-over-year summary table |
-| **Trends** | Monthly volume, 3-month rolling rating & sentiment, % negative reviews over time |
+| ![Overview](screenshots/overview.png) | ![Trends](screenshots/trends.png) |
+
+| Sentiment | Keywords |
+|---|---|
+| ![Sentiment](screenshots/sentiment.png) | ![Keywords](screenshots/keywords.png) |
+
+| Complaints | Reviews |
+|---|---|
+| ![Complaints](screenshots/complaints.png) | ![Reviews](screenshots/reviews.png) |
+
+---
+
+## What it does
+
+Star ratings are a noisy signal — a 1-star review can be sarcastic praise and a 5-star review can hide a genuine complaint. This dashboard applies contextual NLP to surface what users are actually saying, grouped by topic, version, and time period.
+
+**Tabs:**
+
+| Tab | Contents |
+|---|---|
+| **Overview** | Rating distribution, sentiment split, year-over-year table |
+| **Trends** | Monthly volume, 3-month rolling rating & sentiment, % negative over time |
 | **Sentiment** | DistilBERT label distribution, avg sentiment by star rating, rating/model agreement matrix, mismatch examples |
 | **Keywords** | TF-IDF distinctive keywords for positive vs. negative reviews, word clouds |
-| **Complaints** | 13 auto-categorised complaint topics, sarcasm flag, positive theme breakdown, version performance |
+| **Complaints** | 13 auto-categorised complaint topics, sarcasm detection, positive theme breakdown, version performance |
 | **Reviews** | Paginated, multi-sort review browser with sentiment tags |
 
-**Sidebar filters:** star rating range · date range (presets + custom) · app version · sentiment label · topic / keyword
+**Sidebar filters:** star rating · date range (presets + custom) · app version · sentiment label · topic keyword
 
 ---
 
@@ -65,10 +66,10 @@ What makes this more than a tutorial:
 ┌──────────────────────────────────────────────────────────────────────┐
 │  utils/preprocessing.py                                              │
 │  • Merge Parquet cache with raw CSV                                  │
-│  • VADER fallback for any uncached rows                              │
+│  • VADER fallback for uncached rows                                  │
 │  • Sarcasm detection & sentiment correction                          │
 │  • TF-IDF keyword extraction  (scikit-learn)                        │
-│  • Rule-based complaint & positive theme classification              │
+│  • Rule-based complaint & theme classification                       │
 └───────────────────────────────┬──────────────────────────────────────┘
                                 │
                                 ▼
@@ -92,98 +93,59 @@ What makes this more than a tutorial:
 | `appVersion` | App version at time of review |
 | `userName` | Reviewer display name |
 
-**Source:** Scraped from the Amazon Shopping app (Google Play Store) using [`google-play-scraper`](https://pypi.org/project/google-play-scraper/).  
-**Scope:** 87,112 reviews · January 2018 – March 2026
-
-> The dataset is not bundled in this repository due to size. See [Getting Started](#getting-started) for how to obtain it.
+Scraped from the Amazon Shopping app on Google Play using [`google-play-scraper`](https://pypi.org/project/google-play-scraper/). The dataset is not bundled in this repo — see setup instructions below.
 
 ---
 
-## Sentiment Analysis Methodology
+## Sentiment methodology
 
-### Primary model: DistilBERT
+### DistilBERT (primary)
 
-`distilbert-base-uncased-finetuned-sst-2-english` — a 66 M-parameter transformer distilled from BERT and fine-tuned on Stanford Sentiment Treebank (SST-2).
+`distilbert-base-uncased-finetuned-sst-2-english` — 66 M parameters, fine-tuned on Stanford Sentiment Treebank.
 
-**Inference pipeline:**
-1. Reviews are tokenised and truncated to 128 tokens
-2. The model outputs a binary label (`POSITIVE` / `NEGATIVE`) with a confidence score in (0.5, 1.0]
-3. A **calibrated neutral threshold** is applied: confidence < 72 % → **Neutral** (the model is genuinely uncertain — typically mixed-sentiment or ambiguous text)
-4. Results are saved as a Parquet cache; the Streamlit app loads from cache at startup
+The model outputs a binary label (`POSITIVE` / `NEGATIVE`) with a confidence score. Anything below 72 % confidence is labelled **Neutral** — this captures genuinely mixed reviews ("delivery was fast but the item was damaged") that a forced binary label would misrepresent. Results are pre-computed once and loaded from a Parquet cache at startup.
 
-**Why 72 %?** Binary classifiers have no native neutral class. Below this threshold, many reviews contain contradictory sentiment ("delivery was fast but the item was damaged") — forcing them into POSITIVE or NEGATIVE inflates both counts artificially. The 72 % cut-point balances coverage and precision for a three-class output.
+### VADER (fallback)
 
-### Fallback: VADER
+If no Parquet cache is present, the app falls back to VADER in real time. The dashboard header shows which model is active — `🤖 DistilBERT` or `⚠️ VADER`.
 
-When the pre-computed Parquet cache is absent (e.g. fresh clone without running `compute_sentiment.py`), the app falls back to VADER in real time. The dashboard header shows which model is active: `🤖 DistilBERT` or `⚠️ VADER`.
+### Comparison
 
-### VADER vs. DistilBERT
-
-| Dimension | VADER | DistilBERT |
+| | VADER | DistilBERT |
 |---|---|---|
 | Type | Lexicon / rule-based | Transformer (fine-tuned) |
-| Inference speed | Real-time | ~10–20 min for 87 K reviews on CPU |
-| Negation handling | Heuristic (partial) | Contextual (strong) |
-| Neutral detection | Fixed compound threshold | Calibrated confidence threshold |
+| Speed | Real-time | ~10–20 min / 87 K reviews on CPU |
+| Negation | Heuristic | Contextual |
+| Neutral | Fixed compound threshold | Calibrated confidence threshold |
 | Sarcasm | Fails | Partially handles via context |
-| Setup | Zero config | Requires one-time pre-computation |
-| Best for | Quick prototypes, social media | Production NLP, nuanced reviews |
 
 ---
 
-## Sarcasm & Mismatch Detection
+## Sarcasm detection
 
-Users writing sarcastically-positive text in 1–2-star reviews is a well-known NLP failure mode. The pipeline flags these using three independent signals:
+Low-star reviews with suspiciously positive language are flagged using three signals:
 
-1. **Emoji signal** — laughing / eye-roll emojis (😂 🤣 🙄) in a 1–2-star review where the model scores positive sentiment
-2. **Confidence anomaly** — suspiciously high positive confidence (compound > 0.45) on a 1–2-star review
-3. **Phrase matching** — explicit sarcasm markers: *"what a joke", "well done Amazon", "thanks for nothing", "clown world", "oh wow"*, etc.
+1. Laughing / eye-roll emojis (😂 🤣 🙄) paired with a positive model score
+2. Compound score > 0.45 on a 1–2-star review
+3. Explicit sarcasm phrases — *"what a joke", "well done Amazon", "thanks for nothing"*, etc.
 
-When a review triggers any signal, its sentiment label is overridden to **Negative** and the compound score is negated — preventing sarcastic reviews from polluting positive sentiment metrics.
-
-The Complaints tab surfaces the top flagged reviews ranked by upvotes, making them immediately actionable.
+Flagged reviews have their sentiment overridden to Negative and their compound score negated. The Complaints tab lists the most upvoted flagged reviews.
 
 ---
 
-## Key Findings
+## Key findings
 
-- **Below-benchmark satisfaction:** The Amazon Shopping app averages ~2.7 ★ across 87 K reviews — well below the 4.0 ★ benchmark typical of top shopping apps on Google Play
-- **Polarised opinions:** The 3-star tier is significantly underrepresented; users react strongly in one direction with little ambivalence
-- **Top recurring complaints (1–2 ★):** Delivery delays and missing orders, refund and return friction, app performance (crashes, freezing, slow loading), and customer service responsiveness dominate complaint categories
-- **Version-level sensitivity:** Rating quality varies substantially across app versions — the version performance view lets product teams correlate specific releases with satisfaction shifts
-- **Sentiment/rating disagreement:** A measurable share of 5 ★ reviews contain text the model reads as negative (likely habit-rating), and vice versa — the agreement matrix quantifies this gap
-- **Positive drivers:** Fast delivery, product selection breadth, and Prime value are the most distinctive keywords in 4–5 ★ reviews
-
----
-
-## Screenshots
-
-> Take screenshots of each tab and drop them into the `screenshots/` folder, then the images below will render automatically.
-
-| Overview | Trends |
-|---|---|
-| ![Overview](screenshots/overview.png) | ![Trends](screenshots/trends.png) |
-
-| Sentiment | Keywords |
-|---|---|
-| ![Sentiment](screenshots/sentiment.png) | ![Keywords](screenshots/keywords.png) |
-
-| Complaints | Reviews |
-|---|---|
-| ![Complaints](screenshots/complaints.png) | ![Reviews](screenshots/reviews.png) |
+- The app averages ~2.7 ★ across 87 K reviews — well below the 4.0 ★ benchmark for top shopping apps
+- The 3-star tier is significantly underrepresented; users tend to feel strongly in one direction
+- Top complaint themes: delivery delays, missing orders, refund friction, app crashes, and unresponsive customer support
+- Rating quality shifts noticeably across app versions — visible in the version performance breakdown
+- A share of 5 ★ reviews contain text the model reads as negative, and vice versa — the Sentiment tab agreement matrix shows where star rating and NLP disagree
 
 ---
 
-## Getting Started
+## Setup
 
-### Prerequisites
-
-- Python 3.10 or 3.11
-- `amazon_reviews.csv` in the project root (see below)
-
-### 1 — Obtain the dataset
-
-Scrape reviews from Google Play using [`google-play-scraper`](https://pypi.org/project/google-play-scraper/):
+### Get the dataset
 
 ```python
 from google_play_scraper import reviews, Sort
@@ -191,40 +153,30 @@ import pandas as pd
 
 result, _ = reviews(
     'com.amazon.mShop.android.shopping',
-    lang='en',
-    country='us',
-    sort=Sort.NEWEST,
-    count=100_000,
+    lang='en', country='us',
+    sort=Sort.NEWEST, count=100_000,
 )
 pd.DataFrame(result).to_csv('amazon_reviews.csv', index=False)
 ```
 
-The CSV must contain at minimum: `reviewId`, `content`, `score`, `at`, `thumbsUpCount`, `appVersion`, `userName`.
-
-### 2 — Install dependencies
+### Install
 
 ```bash
 git clone https://github.com/<your-username>/amazon-reviews-nlp-dashboard.git
 cd amazon-reviews-nlp-dashboard
-
-# Core app (for running the dashboard)
-pip install -r requirements.txt
-
-# Full local dev (adds DistilBERT + notebook tools)
-pip install -r requirements-dev.txt
+pip install -r requirements.txt          # app only
+pip install -r requirements-dev.txt      # + DistilBERT and notebook tools
 ```
 
-### 3 — Pre-compute DistilBERT sentiment (recommended)
-
-Run once to score all reviews and write the Parquet cache (~67 MB model download, 10–20 min on CPU, under 2 min on GPU):
+### Pre-compute sentiment
 
 ```bash
 python compute_sentiment.py
 ```
 
-This writes `analysis/sentiment_cache.parquet`. Skip this step to use VADER fallback instead.
+Downloads the model (~67 MB) and scores all reviews. Takes 10–20 min on CPU, under 2 min on GPU. Writes `analysis/sentiment_cache.parquet`. Skip to use VADER fallback.
 
-### 4 — Launch the dashboard
+### Run
 
 ```bash
 streamlit run app.py
@@ -232,51 +184,38 @@ streamlit run app.py
 
 ---
 
-## Streamlit Community Cloud Deployment
+## Streamlit Community Cloud
 
-1. Fork this repository on GitHub
-2. Go to [share.streamlit.io](https://share.streamlit.io) and connect your fork
-3. Set **Main file path** to `app.py`
-4. No secrets or environment variables required
-
-The pre-computed `analysis/sentiment_cache.parquet` is committed to the repository, so the deployed app uses DistilBERT scores without needing to run inference in the cloud.
-
-> **Scaling note:** For datasets larger than ~50 MB of Parquet, consider hosting the cache on Hugging Face Hub or S3 and loading it via URL in `preprocessing.py`.
+Connect the repo at [share.streamlit.io](https://share.streamlit.io), set `app.py` as the main file. No secrets needed. The committed Parquet cache means the deployed app runs on DistilBERT scores without any inference step.
 
 ---
 
-## Project Structure
+## Project structure
 
 ```
 amazon-reviews-nlp-dashboard/
-├── app.py                       # Streamlit dashboard — 6 tabs, sidebar filters
-├── compute_sentiment.py         # One-time DistilBERT scoring script (run locally)
-├── requirements.txt             # Deployment dependencies (app only)
-├── requirements-dev.txt         # Local dev dependencies (DistilBERT + notebook)
-├── .streamlit/
-│   └── config.toml              # Theme and server settings
+├── app.py                       # Streamlit dashboard
+├── compute_sentiment.py         # DistilBERT scoring script
+├── requirements.txt             # App dependencies
+├── requirements-dev.txt         # Dev dependencies (DistilBERT + notebook)
+├── .streamlit/config.toml       # Theme and server config
 ├── utils/
-│   ├── __init__.py
-│   └── preprocessing.py         # Data loading, sentiment merge, TF-IDF, filters
+│   └── preprocessing.py         # Data loading, sentiment, TF-IDF, filters
 ├── analysis/
-│   ├── amazon_analysis.ipynb    # EDA notebook with statistical analysis and charts
-│   └── sentiment_cache.parquet  # Pre-computed DistilBERT scores (87 K reviews)
-└── screenshots/                 # Dashboard screenshots for README
+│   ├── amazon_analysis.ipynb    # EDA notebook
+│   └── sentiment_cache.parquet  # Pre-computed scores
+└── screenshots/
 ```
 
 ---
 
-## Future Improvements
+## Possible extensions
 
-- [ ] **Unsupervised topic modelling** — Replace rule-based complaint categories with BERTopic or LDA for data-driven topic discovery
-- [ ] **Aspect-based sentiment** — Score sentiment per aspect (delivery, price, quality) rather than per review
-- [ ] **Real-time scraping** — Scheduled ingestion of new reviews with incremental cache updates
-- [ ] **Multi-app comparison** — Extend the pipeline to benchmark Amazon against Flipkart, eBay, or Shein on identical metrics
-- [ ] **Alert system** — Trigger Slack / email notifications when weekly negative rate spikes beyond a threshold
-- [ ] **Embedding visualisation** — UMAP projection of review embeddings coloured by sentiment or complaint cluster
+- Replace rule-based complaint categories with BERTopic for unsupervised topic discovery
+- Aspect-based sentiment — score delivery, quality, price separately per review
+- Incremental scraping pipeline to keep the dataset current
+- UMAP visualisation of review embeddings coloured by sentiment cluster
 
 ---
 
-## Tech Stack
-
-`Python 3.11` · `Streamlit` · `DistilBERT (HuggingFace Transformers)` · `Plotly` · `scikit-learn` · `VADER` · `pandas` · `pyarrow` · `wordcloud` · `matplotlib`
+`Python` · `Streamlit` · `DistilBERT` · `Plotly` · `scikit-learn` · `VADER` · `pandas` · `pyarrow` · `wordcloud`
