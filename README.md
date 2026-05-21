@@ -93,7 +93,7 @@ Star ratings are a noisy signal — a 1-star review can be sarcastic praise and 
 | `appVersion` | App version at time of review |
 | `userName` | Reviewer display name |
 
-Source: [Amazon Shopping Reviews (Daily Updated)](https://www.kaggle.com/datasets/ashishkumarak/amazon-shopping-reviews-daily-updated) on Kaggle. The CSV is not bundled in this repo — download it and place it in the project root as `amazon_reviews.csv`.
+Source: [Amazon Shopping Reviews (Daily Updated)](https://www.kaggle.com/datasets/ashishkumarak/amazon-shopping-reviews-daily-updated) on Kaggle. The dataset is included in this repo as `amazon_reviews.csv`.
 
 ---
 
@@ -144,13 +144,6 @@ Flagged reviews have their sentiment overridden to Negative and their compound s
 ---
 
 ## Setup
-
-### Get the dataset
-
-Download `amazon_reviews.csv` from Kaggle:
-[https://www.kaggle.com/datasets/ashishkumarak/amazon-shopping-reviews-daily-updated](https://www.kaggle.com/datasets/ashishkumarak/amazon-shopping-reviews-daily-updated)
-
-Place the file in the project root. The app expects it at `amazon_reviews.csv`.
 
 ### Install
 
