@@ -5,6 +5,8 @@
 ![HuggingFace](https://img.shields.io/badge/HuggingFace-DistilBERT-FFD21E?logo=huggingface&logoColor=black)
 ![Plotly](https://img.shields.io/badge/Plotly-Interactive-3F4F75?logo=plotly&logoColor=white)
 
+**[Live Demo →](https://amazon-reviews-nlp-dashboard-3tlnmxppav8zwcqppc3rvv.streamlit.app/)**
+
 An interactive NLP dashboard analysing 87,112 Amazon Shopping app reviews (2018–2026) sourced from Kaggle. Applies DistilBERT for transformer-based sentiment scoring, TF-IDF keyword extraction, sarcasm detection, and complaint categorisation across six analytical tabs.
 
 ---
